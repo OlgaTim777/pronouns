@@ -1,0 +1,891 @@
+<!doctype html>
+<html lang="ru">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Winter Grammar Memory Game</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <style>
+    body {
+      box-sizing: border-box;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    html, body {
+      height: 100%;
+      width: 100%;
+    }
+    
+    @keyframes snowfall {
+      0% { transform: translateY(-10px) translateX(0) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) translateX(20px) rotate(360deg); opacity: 0.3; }
+    }
+    
+    .snowflake {
+      position: fixed;
+      top: -10px;
+      color: white;
+      font-size: 20px;
+      opacity: 0.8;
+      pointer-events: none;
+      animation: snowfall linear infinite;
+      z-index: 1;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    
+    @keyframes sway {
+      0%, 100% { transform: translateX(0) rotate(-2deg); }
+      50% { transform: translateX(10px) rotate(2deg); }
+    }
+    
+    @keyframes fireworkBurst {
+      0% { 
+        transform: scale(0) rotate(0deg); 
+        opacity: 1; 
+      }
+      50% { 
+        transform: scale(1.5) rotate(180deg); 
+        opacity: 1; 
+      }
+      100% { 
+        transform: scale(2) rotate(360deg); 
+        opacity: 0; 
+      }
+    }
+    
+    .winter-tree {
+      position: fixed;
+      bottom: 0;
+      font-size: 60px;
+      pointer-events: none;
+      z-index: 1;
+      animation: sway 4s ease-in-out infinite;
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
+ </head>
+ <body>
+  <div id="snowContainer"></div>
+  <div id="app"></div>
+  <script>
+    const defaultConfig = {
+      game_title: "Winter Grammar Challenge",
+      team1_name: "Snow Team",
+      team2_name: "Ice Team",
+      question_1: "What is your name and where are you from?",
+      question_2: "Tell us about your family",
+      question_3: "What are your hobbies?",
+      question_4: "Describe your personality using adjectives",
+      question_5: "What is your favorite season and why?",
+      question_6: "What are your future plans?",
+      question_7: "What makes you happy?",
+      question_8: "Who is your role model?",
+      background_color: "#1e3a5f",
+      card_color: "#ffffff",
+      text_color: "#2c3e50",
+      primary_color: "#e74c3c",
+      secondary_color: "#3498db",
+      font_family: "system-ui",
+      font_size: 16
+    };
+    
+    let gameState = {
+      cards: [],
+      flippedCards: [],
+      currentTeam: 1,
+      team1Score: 0,
+      team2Score: 0,
+      team1Moves: 0,
+      team2Moves: 0,
+      unlockedQuestions: [],
+      gameStarted: false,
+      timerSeconds: 60,
+      timerRunning: false,
+      timerInterval: null,
+      maxTimerValue: 60,
+      timerPaused: false,
+      currentRound: 1,
+      round1Complete: false,
+      round2Complete: false,
+      showingRoundFeedback: false
+    };
+    
+    const grammarPairsRound1 = [
+      { word: 'I', match: 'my', type: 'pronoun-possessive-adj' },
+      { word: 'you', match: 'your', type: 'pronoun-possessive-adj' },
+      { word: 'he', match: 'his', type: 'pronoun-possessive-adj' },
+      { word: 'she', match: 'her', type: 'pronoun-possessive-adj' },
+      { word: 'we', match: 'our', type: 'pronoun-possessive-adj' },
+      { word: 'they', match: 'their', type: 'pronoun-possessive-adj' },
+      { word: 'it', match: 'its', type: 'pronoun-possessive-adj' },
+      { word: 'who', match: 'whose', type: 'pronoun-possessive-adj' }
+    ];
+    
+    const grammarPairsRound2 = [
+      { word: 'I', match: 'mine', type: 'pronoun-possessive-pron' },
+      { word: 'you', match: 'yours', type: 'pronoun-possessive-pron' },
+      { word: 'he', match: 'his', type: 'pronoun-possessive-pron' },
+      { word: 'she', match: 'hers', type: 'pronoun-possessive-pron' },
+      { word: 'we', match: 'ours', type: 'pronoun-possessive-pron' },
+      { word: 'they', match: 'theirs', type: 'pronoun-possessive-pron' },
+      { word: 'it', match: 'its', type: 'pronoun-possessive-pron' },
+      { word: 'who', match: 'whose', type: 'pronoun-possessive-pron' }
+    ];
+    
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    
+    function playSuccessSound() {
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = 523.25;
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.5);
+      
+      setTimeout(() => {
+        const osc2 = audioContext.createOscillator();
+        const gain2 = audioContext.createGain();
+        osc2.connect(gain2);
+        gain2.connect(audioContext.destination);
+        osc2.frequency.value = 659.25;
+        gain2.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+        osc2.start(audioContext.currentTime);
+        osc2.stop(audioContext.currentTime + 0.4);
+      }, 100);
+    }
+    
+    function playErrorSound() {
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = 200;
+      oscillator.type = 'sawtooth';
+      gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.3);
+    }
+    
+    function playVictoryFanfare() {
+      const notes = [
+        { freq: 523.25, time: 0, duration: 0.15 },
+        { freq: 659.25, time: 0.15, duration: 0.15 },
+        { freq: 783.99, time: 0.3, duration: 0.15 },
+        { freq: 1046.50, time: 0.45, duration: 0.4 }
+      ];
+      
+      notes.forEach(note => {
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        
+        osc.connect(gain);
+        gain.connect(audioContext.destination);
+        
+        osc.frequency.value = note.freq;
+        osc.type = 'triangle';
+        
+        const startTime = audioContext.currentTime + note.time;
+        gain.gain.setValueAtTime(0.3, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, startTime + note.duration);
+        
+        osc.start(startTime);
+        osc.stop(startTime + note.duration);
+      });
+    }
+    
+    function playFinalVictoryFanfare() {
+      const melody = [
+        { freq: 523.25, time: 0, duration: 0.2 },
+        { freq: 659.25, time: 0.2, duration: 0.2 },
+        { freq: 783.99, time: 0.4, duration: 0.2 },
+        { freq: 1046.50, time: 0.6, duration: 0.3 },
+        { freq: 987.77, time: 0.9, duration: 0.15 },
+        { freq: 1046.50, time: 1.05, duration: 0.6 }
+      ];
+      
+      melody.forEach(note => {
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        
+        osc.connect(gain);
+        gain.connect(audioContext.destination);
+        
+        osc.frequency.value = note.freq;
+        osc.type = 'triangle';
+        
+        const startTime = audioContext.currentTime + note.time;
+        gain.gain.setValueAtTime(0.35, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, startTime + note.duration);
+        
+        osc.start(startTime);
+        osc.stop(startTime + note.duration);
+      });
+    }
+    
+    function createSnowflakes() {
+      const container = document.getElementById('snowContainer');
+      container.innerHTML = '';
+      
+      for (let i = 0; i < 40; i++) {
+        const snowflake = document.createElement('div');
+        snowflake.className = 'snowflake';
+        snowflake.textContent = ['❄', '❅', '❆', '🌨️'][Math.floor(Math.random() * 4)];
+        snowflake.style.left = Math.random() * 100 + '%';
+        snowflake.style.animationDuration = (Math.random() * 3 + 5) + 's';
+        snowflake.style.animationDelay = Math.random() * 5 + 's';
+        snowflake.style.fontSize = (Math.random() * 15 + 15) + 'px';
+        container.appendChild(snowflake);
+      }
+      
+      const decorations = ['🌲', '🏠', '🎄'];
+      const positions = [5, 15, 85, 95];
+      
+      positions.forEach((pos, i) => {
+        const tree = document.createElement('div');
+        tree.className = 'winter-tree';
+        tree.textContent = decorations[i % decorations.length];
+        tree.style.left = pos + '%';
+        tree.style.animationDelay = (i * 0.5) + 's';
+        container.appendChild(tree);
+      });
+    }
+    
+    function createFireworks() {
+      const container = document.getElementById('snowContainer');
+      const colors = ['🎆', '✨', '🎇', '⭐', '💫', '🌟'];
+      
+      for (let i = 0; i < 30; i++) {
+        setTimeout(() => {
+          const firework = document.createElement('div');
+          firework.textContent = colors[Math.floor(Math.random() * colors.length)];
+          firework.style.position = 'fixed';
+          firework.style.left = (Math.random() * 80 + 10) + '%';
+          firework.style.top = (Math.random() * 60 + 10) + '%';
+          firework.style.fontSize = (Math.random() * 30 + 30) + 'px';
+          firework.style.zIndex = '1000';
+          firework.style.pointerEvents = 'none';
+          firework.style.animation = 'fireworkBurst 1s ease-out forwards';
+          
+          container.appendChild(firework);
+          
+          setTimeout(() => {
+            firework.remove();
+          }, 1000);
+        }, i * 100);
+      }
+    }
+    
+    function initializeGame() {
+      const pairs = gameState.currentRound === 1 ? grammarPairsRound1 : grammarPairsRound2;
+      const selectedPairs = pairs.slice(0, 8);
+      const allCards = [];
+      
+      selectedPairs.forEach((pair, index) => {
+        allCards.push({
+          id: index * 2,
+          text: pair.word,
+          pairId: index,
+          flipped: false,
+          matched: false,
+          type: pair.type
+        });
+        allCards.push({
+          id: index * 2 + 1,
+          text: pair.match,
+          pairId: index,
+          flipped: false,
+          matched: false,
+          type: pair.type
+        });
+      });
+      
+      gameState.cards = allCards.sort(() => Math.random() - 0.5);
+      gameState.flippedCards = [];
+      gameState.gameStarted = true;
+      gameState.timerRunning = true;
+      gameState.timerSeconds = gameState.maxTimerValue;
+      gameState.timerPaused = false;
+      gameState.showingRoundFeedback = false;
+      if (gameState.timerInterval) {
+        clearInterval(gameState.timerInterval);
+      }
+      startContinuousTimer();
+      render();
+    }
+    
+    function startContinuousTimer() {
+      if (gameState.timerInterval) {
+        clearInterval(gameState.timerInterval);
+      }
+      
+      gameState.timerInterval = setInterval(() => {
+        if (!gameState.timerPaused && gameState.gameStarted) {
+          gameState.timerSeconds--;
+          
+          if (gameState.timerSeconds <= 0) {
+            gameState.currentTeam = gameState.currentTeam === 1 ? 2 : 1;
+            gameState.timerSeconds = gameState.maxTimerValue;
+            
+            if (gameState.flippedCards.length === 2) {
+              gameState.flippedCards.forEach(card => {
+                card.flipped = false;
+              });
+              gameState.flippedCards = [];
+            }
+          }
+          
+          updateTimerDisplay();
+        }
+      }, 1000);
+    }
+    
+    function updateTimerDisplay() {
+      const timerBar = document.getElementById('timerBar');
+      const timerText = document.getElementById('timerText');
+      
+      if (timerBar && timerText) {
+        const percentage = (gameState.timerSeconds / gameState.maxTimerValue) * 100;
+        timerBar.style.width = percentage + '%';
+        
+        const minutes = Math.floor(gameState.timerSeconds / 60);
+        const seconds = gameState.timerSeconds % 60;
+        timerText.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        
+        if (gameState.timerSeconds <= 10) {
+          timerBar.style.background = '#e74c3c';
+        } else if (gameState.timerSeconds <= 20) {
+          timerBar.style.background = '#f39c12';
+        } else {
+          timerBar.style.background = '#2ecc71';
+        }
+      }
+    }
+    
+    function updateTimerValue(newValue) {
+      gameState.maxTimerValue = newValue;
+      if (!gameState.gameStarted) {
+        gameState.timerSeconds = newValue;
+      }
+      render();
+    }
+    
+    function togglePause() {
+      gameState.timerPaused = !gameState.timerPaused;
+      render();
+    }
+    
+    function flipCard(cardId) {
+      if (gameState.flippedCards.length >= 2 || gameState.timerPaused) return;
+      
+      const card = gameState.cards.find(c => c.id === cardId);
+      if (card.flipped || card.matched) return;
+      
+      card.flipped = true;
+      gameState.flippedCards.push(card);
+      
+      if (gameState.flippedCards.length === 2) {
+        if (gameState.currentTeam === 1) {
+          gameState.team1Moves++;
+        } else {
+          gameState.team2Moves++;
+        }
+        
+        const [card1, card2] = gameState.flippedCards;
+        if (card1.pairId === card2.pairId) {
+          playSuccessSound();
+          card1.matched = true;
+          card2.matched = true;
+          
+          if (gameState.currentTeam === 1) {
+            gameState.team1Score++;
+          } else {
+            gameState.team2Score++;
+          }
+          
+          const config = window.elementSdk?.config || defaultConfig;
+          const questions = [
+            config.question_1, config.question_2, config.question_3,
+            config.question_4, config.question_5, config.question_6,
+            config.question_7, config.question_8
+          ].filter(q => q && q.trim() !== '');
+          
+          const totalMatches = gameState.team1Score + gameState.team2Score;
+          if (totalMatches <= questions.length && !gameState.unlockedQuestions.includes(questions[totalMatches - 1])) {
+            gameState.unlockedQuestions.push(questions[totalMatches - 1]);
+          }
+          
+          gameState.flippedCards = [];
+          
+          const allMatched = gameState.cards.every(c => c.matched);
+          if (allMatched) {
+            clearInterval(gameState.timerInterval);
+            gameState.timerRunning = false;
+            gameState.showingRoundFeedback = true;
+            
+            if (gameState.currentRound === 1) {
+              gameState.round1Complete = true;
+              playVictoryFanfare();
+              createFireworks();
+            } else if (gameState.currentRound === 2) {
+              gameState.round2Complete = true;
+              playFinalVictoryFanfare();
+              createFireworks();
+            }
+          }
+          
+          render();
+        } else {
+          playErrorSound();
+          setTimeout(() => {
+            card1.flipped = false;
+            card2.flipped = false;
+            gameState.flippedCards = [];
+            gameState.currentTeam = gameState.currentTeam === 1 ? 2 : 1;
+            gameState.timerSeconds = gameState.maxTimerValue;
+            
+            render();
+          }, 1500);
+        }
+      }
+      
+      render();
+    }
+    
+    function render() {
+      const config = window.elementSdk?.config || defaultConfig;
+      const app = document.getElementById('app');
+      
+      const customFont = config.font_family || defaultConfig.font_family;
+      const baseFontStack = 'system-ui, -apple-system, sans-serif';
+      const baseSize = config.font_size || defaultConfig.font_size;
+      
+      app.style.fontFamily = `${customFont}, ${baseFontStack}`;
+      app.style.background = `linear-gradient(to bottom, ${config.background_color || defaultConfig.background_color}, #2c5f8d)`;
+      app.style.color = config.text_color || defaultConfig.text_color;
+      app.style.minHeight = '100%';
+      app.style.width = '100%';
+      app.style.padding = '24px 16px';
+      app.style.overflowY = 'auto';
+      app.style.position = 'relative';
+      app.style.zIndex = '2';
+      
+      if (!gameState.gameStarted) {
+        app.innerHTML = `
+          <div style="max-width: 900px; margin: 0 auto; text-align: center;">
+            <div style="font-size: ${baseSize * 4}px; margin-bottom: 16px;">🎄❄️🎅⛄</div>
+            <h1 style="font-size: ${baseSize * 2.5}px; font-weight: 700; margin-bottom: 16px; color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
+              ${config.game_title || defaultConfig.game_title}
+            </h1>
+            <p style="font-size: ${baseSize * 1.125}px; margin-bottom: 24px; color: white; opacity: 0.95;">
+              Командная игра на знание английской грамматики
+            </p>
+            <div style="background: rgba(255,255,255,0.95); border-radius: 16px; padding: 24px; margin-bottom: 24px; box-shadow: 0 8px 24px rgba(0,0,0,0.2);">
+              <h3 style="font-size: ${baseSize * 1.25}px; margin-bottom: 16px; color: ${config.text_color || defaultConfig.text_color};">⏱️ Настройка таймера для хода</h3>
+              <div style="display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;">
+                <button id="timer30" style="background: ${gameState.maxTimerValue === 30 ? config.primary_color || defaultConfig.primary_color : config.secondary_color || defaultConfig.secondary_color}; color: white; border: none; padding: 10px 16px; font-size: ${baseSize * 0.875}px; font-weight: 600; border-radius: 8px; cursor: pointer; font-family: inherit;">
+                  30 сек
+                </button>
+                <button id="timer60" style="background: ${gameState.maxTimerValue === 60 ? config.primary_color || defaultConfig.primary_color : config.secondary_color || defaultConfig.secondary_color}; color: white; border: none; padding: 10px 16px; font-size: ${baseSize * 0.875}px; font-weight: 600; border-radius: 8px; cursor: pointer; font-family: inherit;">
+                  1 мин
+                </button>
+                <button id="timer90" style="background: ${gameState.maxTimerValue === 90 ? config.primary_color || defaultConfig.primary_color : config.secondary_color || defaultConfig.secondary_color}; color: white; border: none; padding: 10px 16px; font-size: ${baseSize * 0.875}px; font-weight: 600; border-radius: 8px; cursor: pointer; font-family: inherit;">
+                  1.5 мин
+                </button>
+                <button id="timer120" style="background: ${gameState.maxTimerValue === 120 ? config.primary_color || defaultConfig.primary_color : config.secondary_color || defaultConfig.secondary_color}; color: white; border: none; padding: 10px 16px; font-size: ${baseSize * 0.875}px; font-weight: 600; border-radius: 8px; cursor: pointer; font-family: inherit;">
+                  2 мин
+                </button>
+                <button id="timer180" style="background: ${gameState.maxTimerValue === 180 ? config.primary_color || defaultConfig.primary_color : config.secondary_color || defaultConfig.secondary_color}; color: white; border: none; padding: 10px 16px; font-size: ${baseSize * 0.875}px; font-weight: 600; border-radius: 8px; cursor: pointer; font-family: inherit;">
+                  3 мин
+                </button>
+                <button id="timer300" style="background: ${gameState.maxTimerValue === 300 ? config.primary_color || defaultConfig.primary_color : config.secondary_color || defaultConfig.secondary_color}; color: white; border: none; padding: 10px 16px; font-size: ${baseSize * 0.875}px; font-weight: 600; border-radius: 8px; cursor: pointer; font-family: inherit;">
+                  5 мин
+                </button>
+              </div>
+              <p style="margin-top: 12px; font-size: ${baseSize * 0.875}px; color: ${config.text_color || defaultConfig.text_color}; opacity: 0.7;">
+                Выбрано: <strong>${Math.floor(gameState.maxTimerValue / 60)}:${(gameState.maxTimerValue % 60).toString().padStart(2, '0')}</strong>
+              </p>
+            </div>
+            <button id="startBtn" style="background: ${config.primary_color || defaultConfig.primary_color}; color: white; border: none; padding: 16px 32px; font-size: ${baseSize * 1.125}px; font-weight: 600; border-radius: 12px; cursor: pointer; transition: transform 0.2s, opacity 0.2s; font-family: inherit; box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);">
+              🎮 Начать игру
+            </button>
+          </div>
+        `;
+        
+        document.getElementById('timer30').addEventListener('click', () => updateTimerValue(30));
+        document.getElementById('timer60').addEventListener('click', () => updateTimerValue(60));
+        document.getElementById('timer90').addEventListener('click', () => updateTimerValue(90));
+        document.getElementById('timer120').addEventListener('click', () => updateTimerValue(120));
+        document.getElementById('timer180').addEventListener('click', () => updateTimerValue(180));
+        document.getElementById('timer300').addEventListener('click', () => updateTimerValue(300));
+        
+        const startBtn = document.getElementById('startBtn');
+        startBtn.addEventListener('mouseenter', () => {
+          startBtn.style.transform = 'scale(1.05)';
+        });
+        startBtn.addEventListener('mouseleave', () => {
+          startBtn.style.transform = 'scale(1)';
+        });
+        startBtn.addEventListener('click', initializeGame);
+        return;
+      }
+      
+      const allMatched = gameState.cards.every(card => card.matched);
+      const winner = gameState.team1Score > gameState.team2Score ? 1 : gameState.team2Score > gameState.team1Score ? 2 : 0;
+      
+      app.innerHTML = `
+        <div style="max-width: 1000px; margin: 0 auto;">
+          <div style="text-align: center; margin-bottom: 20px;">
+            <div style="display: flex; justify-content: center; align-items: center; gap: 16px; margin-bottom: 12px;">
+              <span style="font-size: ${baseSize * 2}px;">🏠</span>
+              <h1 style="font-size: ${baseSize * 2}px; font-weight: 700; color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
+                ${config.game_title || defaultConfig.game_title}
+              </h1>
+              <span style="font-size: ${baseSize * 2}px;">🎄</span>
+            </div>
+            ${gameState.gameStarted ? `
+              <div style="background: rgba(255,255,255,0.9); display: inline-block; padding: 8px 20px; border-radius: 20px; font-weight: 700; font-size: ${baseSize * 1.125}px; color: ${config.primary_color || defaultConfig.primary_color};">
+                🎯 Round ${gameState.currentRound} ${gameState.currentRound === 1 ? '- Personal Pronouns & Possessive Adjectives' : '- Personal Pronouns & Possessive Pronouns'}
+              </div>
+            ` : ''}
+          </div>
+          
+          ${!allMatched ? `
+          <div style="background: rgba(255,255,255,0.95); padding: 16px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: ${baseSize}px; font-weight: 600; color: ${config.text_color || defaultConfig.text_color};">
+                  ${gameState.currentTeam === 1 ? '❄️ ' + (config.team1_name || defaultConfig.team1_name) : '⛄ ' + (config.team2_name || defaultConfig.team2_name)}
+                </span>
+                <span id="timerText" style="font-size: ${baseSize * 1.25}px; font-weight: 700; color: ${config.primary_color || defaultConfig.primary_color};">
+                  ${Math.floor(gameState.timerSeconds / 60)}:${(gameState.timerSeconds % 60).toString().padStart(2, '0')}
+                </span>
+              </div>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button id="pauseBtn" style="background: ${config.secondary_color || defaultConfig.secondary_color}; color: white; border: none; padding: 6px 12px; font-size: ${baseSize * 0.875}px; font-weight: 600; border-radius: 6px; cursor: pointer; font-family: inherit;">
+                  ${gameState.timerPaused ? '▶️ Продолжить' : '⏸️ Пауза'}
+                </button>
+                <select id="timerSelect" style="padding: 6px 10px; font-size: ${baseSize * 0.875}px; border-radius: 6px; border: 2px solid ${config.secondary_color || defaultConfig.secondary_color}; font-family: inherit; cursor: pointer;">
+                  <option value="30" ${gameState.maxTimerValue === 30 ? 'selected' : ''}>30 сек</option>
+                  <option value="60" ${gameState.maxTimerValue === 60 ? 'selected' : ''}>1 мин</option>
+                  <option value="90" ${gameState.maxTimerValue === 90 ? 'selected' : ''}>1.5 мин</option>
+                  <option value="120" ${gameState.maxTimerValue === 120 ? 'selected' : ''}>2 мин</option>
+                  <option value="180" ${gameState.maxTimerValue === 180 ? 'selected' : ''}>3 мин</option>
+                  <option value="300" ${gameState.maxTimerValue === 300 ? 'selected' : ''}>5 мин</option>
+                </select>
+              </div>
+            </div>
+            <div style="background: #e0e0e0; height: 20px; border-radius: 10px; overflow: hidden; position: relative;">
+              <div id="timerBar" style="height: 100%; background: ${gameState.timerSeconds <= 10 ? '#e74c3c' : gameState.timerSeconds <= 20 ? '#f39c12' : '#2ecc71'}; transition: width 0.3s, background 0.3s; border-radius: 10px; width: ${(gameState.timerSeconds / gameState.maxTimerValue) * 100}%;"></div>
+            </div>
+          </div>
+          ` : ''}
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+            <div style="background: ${gameState.currentTeam === 1 ? 'rgba(52, 152, 219, 0.95)' : 'rgba(255,255,255,0.9)'}; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); border: 3px solid ${gameState.currentTeam === 1 ? config.primary_color || defaultConfig.primary_color : 'transparent'}; transition: all 0.3s;">
+              <div style="font-size: ${baseSize * 1.5}px; margin-bottom: 8px;">❄️</div>
+              <h3 style="font-size: ${baseSize * 1.25}px; font-weight: 700; margin-bottom: 8px; color: ${gameState.currentTeam === 1 ? 'white' : config.text_color || defaultConfig.text_color};">
+                ${config.team1_name || defaultConfig.team1_name}
+              </h3>
+              <p style="font-size: ${baseSize * 1.5}px; font-weight: 700; color: ${gameState.currentTeam === 1 ? 'white' : config.text_color || defaultConfig.text_color};">
+                ${gameState.team1Score} очков
+              </p>
+              <p style="font-size: ${baseSize * 0.875}px; color: ${gameState.currentTeam === 1 ? 'rgba(255,255,255,0.9)' : config.text_color || defaultConfig.text_color}; opacity: 0.8;">
+                Ходов: ${gameState.team1Moves}
+              </p>
+            </div>
+            
+            <div style="background: ${gameState.currentTeam === 2 ? 'rgba(52, 152, 219, 0.95)' : 'rgba(255,255,255,0.9)'}; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); border: 3px solid ${gameState.currentTeam === 2 ? config.primary_color || defaultConfig.primary_color : 'transparent'}; transition: all 0.3s;">
+              <div style="font-size: ${baseSize * 1.5}px; margin-bottom: 8px;">⛄</div>
+              <h3 style="font-size: ${baseSize * 1.25}px; font-weight: 700; margin-bottom: 8px; color: ${gameState.currentTeam === 2 ? 'white' : config.text_color || defaultConfig.text_color};">
+                ${config.team2_name || defaultConfig.team2_name}
+              </h3>
+              <p style="font-size: ${baseSize * 1.5}px; font-weight: 700; color: ${gameState.currentTeam === 2 ? 'white' : config.text_color || defaultConfig.text_color};">
+                ${gameState.team2Score} очков
+              </p>
+              <p style="font-size: ${baseSize * 0.875}px; color: ${gameState.currentTeam === 2 ? 'rgba(255,255,255,0.9)' : config.text_color || defaultConfig.text_color}; opacity: 0.8;">
+                Ходов: ${gameState.team2Moves}
+              </p>
+            </div>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; max-width: 800px; margin-left: auto; margin-right: auto;">
+            ${gameState.cards.map(card => `
+              <div class="card" data-id="${card.id}" style="aspect-ratio: 1; background: ${card.matched ? `linear-gradient(135deg, ${config.primary_color || defaultConfig.primary_color}, ${config.secondary_color || defaultConfig.secondary_color})` : card.flipped ? config.card_color || defaultConfig.card_color : 'linear-gradient(135deg, #ffffff, #e8f4f8)'}; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: ${baseSize * 2.5}px; font-weight: 700; cursor: ${card.matched || gameState.timerPaused ? 'default' : 'pointer'}; transition: all 0.3s; box-shadow: 0 6px 16px rgba(0,0,0,0.2); border: 3px solid ${card.matched ? config.primary_color || defaultConfig.primary_color : card.flipped ? config.secondary_color || defaultConfig.secondary_color : 'transparent'}; color: ${card.matched ? 'white' : config.text_color || defaultConfig.text_color}; ${card.matched ? 'opacity: 0.9;' : ''}">
+                ${card.flipped || card.matched ? card.text : '🎁'}
+              </div>
+            `).join('')}
+          </div>
+          
+          ${gameState.unlockedQuestions.length > 0 ? `
+            <div style="background: rgba(255,255,255,0.95); border-radius: 16px; padding: 24px; box-shadow: 0 4px 16px rgba(0,0,0,0.2); margin-bottom: 24px;">
+              <h2 style="font-size: ${baseSize * 1.5}px; font-weight: 700; margin-bottom: 20px; color: ${config.primary_color || defaultConfig.primary_color};">
+                🎉 About Myself Questions
+              </h2>
+              <div style="display: flex; flex-direction: column; gap: 12px;">
+                ${gameState.unlockedQuestions.map((q, i) => `
+                  <div style="padding: 16px; background: linear-gradient(to right, rgba(52, 152, 219, 0.1), rgba(231, 76, 60, 0.1)); border-radius: 10px; border-left: 4px solid ${config.primary_color || defaultConfig.primary_color};">
+                    <span style="font-weight: 600; color: ${config.primary_color || defaultConfig.primary_color}; font-size: ${baseSize * 0.875}px;">Question ${i + 1}:</span>
+                    <p style="margin-top: 6px; font-size: ${baseSize}px; color: ${config.text_color || defaultConfig.text_color};">${q}</p>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+          
+          ${allMatched ? `
+            <div style="text-align: center; background: rgba(255,255,255,0.95); border-radius: 16px; padding: 32px; box-shadow: 0 4px 16px rgba(0,0,0,0.2); margin-bottom: 24px;">
+              <div style="font-size: ${baseSize * 6}px; margin-bottom: 16px; animation: pulse 1s infinite;">
+                ${gameState.currentRound === 1 ? '🎉' : '🎆'}
+              </div>
+              <h2 style="font-size: ${baseSize * 2.5}px; font-weight: 700; margin-bottom: 12px; color: ${config.primary_color || defaultConfig.primary_color};">
+                ${gameState.currentRound === 1 ? 'Wow!' : 'You\'ve done it!'}
+              </h2>
+              <p style="font-size: ${baseSize * 1.25}px; margin-bottom: 16px; color: ${config.text_color || defaultConfig.text_color}; font-weight: 600;">
+                Round ${gameState.currentRound} Complete!
+              </p>
+              <div style="background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), rgba(231, 76, 60, 0.1)); padding: 20px; border-radius: 12px; margin-bottom: 24px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 12px;">
+                  <div>
+                    <div style="font-size: ${baseSize * 1.5}px; margin-bottom: 8px;">❄️</div>
+                    <div style="font-size: ${baseSize * 0.875}px; color: ${config.text_color || defaultConfig.text_color}; opacity: 0.8;">
+                      ${config.team1_name || defaultConfig.team1_name}
+                    </div>
+                    <div style="font-size: ${baseSize * 2}px; font-weight: 700; color: ${config.primary_color || defaultConfig.primary_color};">
+                      ${gameState.team1Score}
+                    </div>
+                  </div>
+                  <div>
+                    <div style="font-size: ${baseSize * 1.5}px; margin-bottom: 8px;">⛄</div>
+                    <div style="font-size: ${baseSize * 0.875}px; color: ${config.text_color || defaultConfig.text_color}; opacity: 0.8;">
+                      ${config.team2_name || defaultConfig.team2_name}
+                    </div>
+                    <div style="font-size: ${baseSize * 2}px; font-weight: 700; color: ${config.secondary_color || defaultConfig.secondary_color};">
+                      ${gameState.team2Score}
+                    </div>
+                  </div>
+                </div>
+                ${winner !== 0 ? `
+                  <p style="font-size: ${baseSize * 1.125}px; font-weight: 600; color: ${config.primary_color || defaultConfig.primary_color};">
+                    🏆 ${winner === 1 ? config.team1_name || defaultConfig.team1_name : config.team2_name || defaultConfig.team2_name} wins Round ${gameState.currentRound}!
+                  </p>
+                ` : `
+                  <p style="font-size: ${baseSize * 1.125}px; font-weight: 600; color: ${config.text_color || defaultConfig.text_color};">
+                    🤝 It's a tie!
+                  </p>
+                `}
+              </div>
+              ${gameState.currentRound === 1 ? `
+                <button id="nextRoundBtn" style="background: ${config.secondary_color || defaultConfig.secondary_color}; color: white; border: none; padding: 14px 28px; font-size: ${baseSize}px; font-weight: 600; border-radius: 10px; cursor: pointer; transition: opacity 0.2s; font-family: inherit; margin-right: 12px;">
+                  ➡️ Round 2
+                </button>
+              ` : ''}
+              <button id="playAgainBtn" style="background: ${config.primary_color || defaultConfig.primary_color}; color: white; border: none; padding: 14px 28px; font-size: ${baseSize}px; font-weight: 600; border-radius: 10px; cursor: pointer; transition: opacity 0.2s; font-family: inherit;">
+                🎮 ${gameState.currentRound === 2 ? 'Play Again' : 'Restart Game'}
+              </button>
+            </div>
+          ` : ''}
+        </div>
+      `;
+      
+      if (!allMatched) {
+        const pauseBtn = document.getElementById('pauseBtn');
+        if (pauseBtn) {
+          pauseBtn.addEventListener('click', togglePause);
+        }
+        
+        const timerSelect = document.getElementById('timerSelect');
+        if (timerSelect) {
+          timerSelect.addEventListener('change', (e) => {
+            const newValue = parseInt(e.target.value);
+            gameState.maxTimerValue = newValue;
+            gameState.timerSeconds = newValue;
+            updateTimerDisplay();
+          });
+        }
+      }
+      
+      document.querySelectorAll('.card').forEach(cardEl => {
+        const cardId = parseInt(cardEl.dataset.id);
+        const card = gameState.cards.find(c => c.id === cardId);
+        
+        if (!card.matched) {
+          cardEl.addEventListener('mouseenter', () => {
+            if (!card.flipped && !gameState.timerPaused) {
+              cardEl.style.transform = 'scale(1.08) rotate(2deg)';
+            }
+          });
+          cardEl.addEventListener('mouseleave', () => {
+            cardEl.style.transform = 'scale(1) rotate(0deg)';
+          });
+          cardEl.addEventListener('click', () => {
+            if (!gameState.timerPaused) {
+              flipCard(cardId);
+            }
+          });
+        }
+      });
+      
+      if (allMatched) {
+        const nextRoundBtn = document.getElementById('nextRoundBtn');
+        if (nextRoundBtn) {
+          nextRoundBtn.addEventListener('mouseenter', () => {
+            nextRoundBtn.style.opacity = '0.9';
+          });
+          nextRoundBtn.addEventListener('mouseleave', () => {
+            nextRoundBtn.style.opacity = '1';
+          });
+          nextRoundBtn.addEventListener('click', () => {
+            gameState.currentRound = 2;
+            gameState.team1Score = 0;
+            gameState.team2Score = 0;
+            gameState.team1Moves = 0;
+            gameState.team2Moves = 0;
+            gameState.unlockedQuestions = [];
+            gameState.currentTeam = 1;
+            initializeGame();
+          });
+        }
+        
+        const playAgainBtn = document.getElementById('playAgainBtn');
+        if (playAgainBtn) {
+          playAgainBtn.addEventListener('mouseenter', () => {
+            playAgainBtn.style.opacity = '0.9';
+          });
+          playAgainBtn.addEventListener('mouseleave', () => {
+            playAgainBtn.style.opacity = '1';
+          });
+          playAgainBtn.addEventListener('click', () => {
+            if (gameState.timerInterval) {
+              clearInterval(gameState.timerInterval);
+              gameState.timerInterval = null;
+            }
+            gameState.gameStarted = false;
+            gameState.timerRunning = false;
+            gameState.currentRound = 1;
+            gameState.team1Score = 0;
+            gameState.team2Score = 0;
+            gameState.team1Moves = 0;
+            gameState.team2Moves = 0;
+            gameState.unlockedQuestions = [];
+            gameState.currentTeam = 1;
+            gameState.round1Complete = false;
+            gameState.round2Complete = false;
+            render();
+          });
+        }
+      }
+    }
+    
+    async function onConfigChange(config) {
+      render();
+    }
+    
+    function mapToCapabilities(config) {
+      return {
+        recolorables: [
+          {
+            get: () => config.background_color || defaultConfig.background_color,
+            set: (value) => {
+              config.background_color = value;
+              window.elementSdk.setConfig({ background_color: value });
+            }
+          },
+          {
+            get: () => config.card_color || defaultConfig.card_color,
+            set: (value) => {
+              config.card_color = value;
+              window.elementSdk.setConfig({ card_color: value });
+            }
+          },
+          {
+            get: () => config.text_color || defaultConfig.text_color,
+            set: (value) => {
+              config.text_color = value;
+              window.elementSdk.setConfig({ text_color: value });
+            }
+          },
+          {
+            get: () => config.primary_color || defaultConfig.primary_color,
+            set: (value) => {
+              config.primary_color = value;
+              window.elementSdk.setConfig({ primary_color: value });
+            }
+          },
+          {
+            get: () => config.secondary_color || defaultConfig.secondary_color,
+            set: (value) => {
+              config.secondary_color = value;
+              window.elementSdk.setConfig({ secondary_color: value });
+            }
+          }
+        ],
+        borderables: [],
+        fontEditable: {
+          get: () => config.font_family || defaultConfig.font_family,
+          set: (value) => {
+            config.font_family = value;
+            window.elementSdk.setConfig({ font_family: value });
+          }
+        },
+        fontSizeable: {
+          get: () => config.font_size || defaultConfig.font_size,
+          set: (value) => {
+            config.font_size = value;
+            window.elementSdk.setConfig({ font_size: value });
+          }
+        }
+      };
+    }
+    
+    function mapToEditPanelValues(config) {
+      return new Map([
+        ['game_title', config.game_title || defaultConfig.game_title],
+        ['team1_name', config.team1_name || defaultConfig.team1_name],
+        ['team2_name', config.team2_name || defaultConfig.team2_name],
+        ['question_1', config.question_1 || defaultConfig.question_1],
+        ['question_2', config.question_2 || defaultConfig.question_2],
+        ['question_3', config.question_3 || defaultConfig.question_3],
+        ['question_4', config.question_4 || defaultConfig.question_4],
+        ['question_5', config.question_5 || defaultConfig.question_5],
+        ['question_6', config.question_6 || defaultConfig.question_6],
+        ['question_7', config.question_7 || defaultConfig.question_7],
+        ['question_8', config.question_8 || defaultConfig.question_8]
+      ]);
+    }
+    
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig,
+        onConfigChange,
+        mapToCapabilities,
+        mapToEditPanelValues
+      });
+    }
+    
+    createSnowflakes();
+    render();
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b2ad02b377a8d6e',t:'MTc2NjUyMzg4NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
