@@ -482,7 +482,7 @@
       const baseSize = config.font_size || defaultConfig.font_size;
       
       app.style.fontFamily = `${customFont}, ${baseFontStack}`;
-      app.style.background = `linear-gradient(to bottom, ${config.background_color || defaultConfig.background_color}, #2c5f8d)`;
+      app.style.background = `url('https://i.imgur.com/xYJIXGn.png') center/cover no-repeat, linear-gradient(to bottom, ${config.background_color || defaultConfig.background_color}, #2c5f8d)`;
       app.style.color = config.text_color || defaultConfig.text_color;
       app.style.minHeight = '100%';
       app.style.width = '100%';
@@ -562,7 +562,9 @@
               <h1 style="font-size: ${baseSize * 2}px; font-weight: 700; color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
                 ${config.game_title || defaultConfig.game_title}
               </h1>
-              <span style="font-size: ${baseSize * 2}px;">🎄</span>
+              <a href="https://vk.com/club221025676" target="_blank" rel="noopener noreferrer" style="display: inline-block; transition: transform 0.2s;" onmouseenter="this.style.transform='scale(1.1)'" onmouseleave="this.style.transform='scale(1)'">
+                <img src="https://i.imgur.com/QC0aRsL.jpeg" alt="VK Logo" style="width: 50px; height: 50px; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.3); object-fit: cover;" onerror="this.src=''; this.alt='Logo failed to load'; this.style.display='none';">
+              </a>
             </div>
             ${gameState.gameStarted ? `
               <div style="background: rgba(255,255,255,0.9); display: inline-block; padding: 8px 20px; border-radius: 20px; font-weight: 700; font-size: ${baseSize * 1.125}px; color: ${config.primary_color || defaultConfig.primary_color};">
@@ -887,5 +889,5 @@
     createSnowflakes();
     render();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b2ad02b377a8d6e',t:'MTc2NjUyMzg4NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b2e09adf47d8d6e',t:'MTc2NjU1NzY5OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
