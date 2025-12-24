@@ -494,12 +494,17 @@
       if (!gameState.gameStarted) {
         app.innerHTML = `
           <div style="max-width: 900px; margin: 0 auto; text-align: center;">
-            <div style="font-size: ${baseSize * 4}px; margin-bottom: 16px;">🎄❄️🎅⛄</div>
-            <h1 style="font-size: ${baseSize * 2.5}px; font-weight: 700; margin-bottom: 16px; color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
-              ${config.game_title || defaultConfig.game_title}
-            </h1>
+            <div style="display: flex; justify-content: center; align-items: center; gap: 16px; margin-bottom: 16px;">
+              <span style="font-size: ${baseSize * 3}px;">🎄</span>
+              <h1 style="font-size: ${baseSize * 2.5}px; font-weight: 700; color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); margin: 0;">
+                ${config.game_title || defaultConfig.game_title}
+              </h1>
+              <a href="https://vk.com/club221025676" target="_blank" rel="noopener noreferrer" style="display: inline-block; transition: transform 0.2s;" onmouseenter="this.style.transform='scale(1.1)'" onmouseleave="this.style.transform='scale(1)'">
+                <img src="https://i.imgur.com/QC0aRsL.jpeg" alt="VK Logo" style="width: 50px; height: 50px; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.3); object-fit: cover;" onerror="this.src=''; this.alt='Logo failed to load'; this.style.display='none';">
+              </a>
+            </div>
             <p style="font-size: ${baseSize * 1.125}px; margin-bottom: 24px; color: white; opacity: 0.95;">
-              Командная игра на знание английской грамматики
+              Командная игра на знание английской гра��матики
             </p>
             <div style="background: rgba(255,255,255,0.95); border-radius: 16px; padding: 24px; margin-bottom: 24px; box-shadow: 0 8px 24px rgba(0,0,0,0.2);">
               <h3 style="font-size: ${baseSize * 1.25}px; margin-bottom: 16px; color: ${config.text_color || defaultConfig.text_color};">⏱️ Настройка таймера для хода</h3>
@@ -586,7 +591,7 @@
               </div>
               <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                 <button id="pauseBtn" style="background: ${config.secondary_color || defaultConfig.secondary_color}; color: white; border: none; padding: 6px 12px; font-size: ${baseSize * 0.875}px; font-weight: 600; border-radius: 6px; cursor: pointer; font-family: inherit;">
-                  ${gameState.timerPaused ? '▶️ Продолжить' : '⏸️ Пауза'}
+                  ${gameState.timerPaused ? '▶️ ��родолжить' : '⏸️ Пауза'}
                 </button>
                 <select id="timerSelect" style="padding: 6px 10px; font-size: ${baseSize * 0.875}px; border-radius: 6px; border: 2px solid ${config.secondary_color || defaultConfig.secondary_color}; font-family: inherit; cursor: pointer;">
                   <option value="30" ${gameState.maxTimerValue === 30 ? 'selected' : ''}>30 сек</option>
@@ -889,5 +894,5 @@
     createSnowflakes();
     render();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b2e09adf47d8d6e',t:'MTc2NjU1NzY5OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b2e234054eef78c',t:'MTc2NjU1ODc0Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
